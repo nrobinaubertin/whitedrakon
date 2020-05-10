@@ -103,14 +103,14 @@ def output_html(movies):
         <table class="table table-bordered table-striped">
             <thead class="thead-dark">
                 <tr>
-                    <th>Title</th>
-                    <th>Languages</th>
-                    <th>Subtitles</th>
-                    <th>Duration</th>
-                    <th>Year</th>
-                    <th>Genres</th>
-                    <th>Plot</th>
-                    <th>Size</th>
+                    <th onclick="sortBy(0)">Title</th>
+                    <th onclick="sortBy(1)">Languages</th>
+                    <th onclick="sortBy(2)">Subtitles</th>
+                    <th onclick="sortBy(3)">Duration</th>
+                    <th onclick="sortBy(4)">Year</th>
+                    <th onclick="sortBy(5)">Genres</th>
+                    <th onclick="sortBy(6)">Plot</th>
+                    <th onclick="sortBy(7)">Size</th>
                 </tr>
             </thead>
             <tbody>
@@ -121,6 +121,18 @@ def output_html(movies):
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script>
+    function sortBy(col) {{
+        let origin = Array.from(document.querySelectorAll('tbody tr'))
+        let sorted = origin.slice(0);
+        sorted = sorted.sort((a, b) => a.children[col].innerText > b.children[col].innerText);
+        if (origin[0] == sorted[0]) {{
+            sorted.reverse();
+        }}
+        document.querySelector('tbody').innerHTML = "";
+        sorted.forEach(e => document.querySelector('tbody').appendChild(e));
+    }}
+    </script>
   </body>
 </html>\
     """.format(functools.reduce(lambda x, y: str(x) + output_movie(y), movies, ""))
