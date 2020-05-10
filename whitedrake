@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess
+import re
+import pprint
+import functools
+import pickle
+import tempfile
+from imdb import IMDb
+
+
+def findfirst(pattern, string):
+    m = re.search(pattern, string)
+    return m.group(1) if m else ''
+
+
+def get_movie_infos(filename):
+    try:
+        ret = subprocess.run(['ffmpeg', '-i', filename],
+                             capture_output=True, text=True)
+        return {
+            'duration': findfirst(r'Duration: ([0-9:]*)', ret.stderr),
+            'languages': re.findall(r'Stream.*\((.*)\):.*Audio.*', ret.stderr),
+            'subtitles': re.findall(r'Stream.*\((.*)\):.*Subtitle.*', ret.stderr),
+            'type': findfirst(r'Stream.*Video: (\w+).*', ret.stderr),
+            'resolution': findfirst(r'Stream.*Video:.* (\d+x\d+).*', ret.stderr)
+        }
+    except:
+        return {
+            'duration': '',
+            'languages': '',
+            'subtitles': '',
+            'type': '',
+            'resolution': '',
+        }
+
+
+def get_file_infos(filename):
+    return {
+        'path': filename,
+        'size': round(os.path.getsize(filename)/1024/1024/1024, 1),
+        'extension': os.path.splitext(filename)[1],
+        'filename': os.path.basename(filename),
+        'title': os.path.splitext(os.path.basename(filename))[0],
+        'mtime': os.path.getmtime(filename),
+    }
+
+
+def identify(filename):
+    movie = {**get_file_infos(filename), **get_movie_infos(filename)}
+    return {**movie, **get_imdb_infos(movie['title'])}
+
+def get_imdb_infos(title):
+    ia = IMDb()
+    movie = ia.search_movie(title)
+    if len(movie) > 0:
+        mid = movie[0].movieID
+        movie = ia.get_movie(mid)
+        return {
+            'url': 'https://www.imdb.com/title/tt' + mid,
+            'title': movie.get('title'),
+            'year': movie.get('year'),
+            'genres': movie.get('genres'),
+            'plot': movie.get('plot', [""])[0],
+        }
+    else:
+        return {}
+
+def output_movie(movie):
+    print(movie, file=sys.stderr)
+    return """<tr>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>""".format(
+        movie.get("title", ""),
+        ', '.join(set(movie.get("languages", []))).lower(),
+        ', '.join(set(movie.get("subtitles", []))).lower(),
+        movie.get("duration"),
+        movie.get("year"),
+        ', '.join(set(movie.get("genres", []))).lower(),
+        movie.get("plot", "").split('::')[0],
+        movie.get("size", ""),
+    )
+
+def output_html(movies):
+    return """\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  </head>
+  <body>
+    <div class="my-3 container-fluid">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Languages</th>
+                    <th>Subtitles</th>
+                    <th>Duration</th>
+                    <th>Year</th>
+                    <th>Genres</th>
+                    <th>Plot</th>
+                    <th>Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                {}
+            </tbody>
+        </table>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  </body>
+</html>\
+    """.format(functools.reduce(lambda x, y: str(x) + output_movie(y), movies, ""))
+
+picklefile = tempfile.gettempdir() + os.sep + "whitedrake.pickle"
+movies = []
+if os.path.isfile(picklefile):
+    with open(picklefile, 'rb') as f:
+        movies = pickle.load(f)
+
+for path, subdirs, files in os.walk(sys.argv[1]):
+    for name in files:
+        if re.match(r'.*\.(mkv|mp4|avi|wmv)$', name, flags=re.IGNORECASE):
+            moviepath = os.path.join(path, name)
+            print(moviepath, file=sys.stderr)
+            if any([m["path"] == moviepath for m in movies]):
+                continue
+            else:
+                m = identify(moviepath)
+                movies.append(m)
+                with open(picklefile, 'wb') as f:
+                    pickle.dump(movies, f, protocol=4)
+
+
+print(output_html(movies))
