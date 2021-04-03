@@ -79,17 +79,18 @@ def output_movie(movie):
         <td>{}</td>
         <td>{}</td>
         <td>{}</td>
-        <td>{}</td>
+        <td><a href="{}" download>{}</a></td>
     </tr>""".format(
         movie.get("url"),
-        movie.get("cover", "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="),
+        movie.get("cover") if movie.get("cover") is not None else "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=",
         movie.get("title", ""),
         ', '.join(set(movie.get("languages", []))).lower(),
         ', '.join(set(movie.get("subtitles", []))).lower(),
         movie.get("duration"),
         movie.get("year"),
-        ', '.join(set(movie.get("genres", []))).lower(),
+        ', '.join(set(movie.get("genres"))).lower() if movie.get("genres") is not None else "",
         movie.get("plot", "").split('::')[0],
+        movie.get("filename", ""),
         movie.get("size", ""),
     )
 
