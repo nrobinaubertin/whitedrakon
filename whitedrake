@@ -8,7 +8,18 @@ import pprint
 import functools
 import pickle
 import tempfile
+import requests
+import base64
+import datetime
 from imdb import IMDb
+
+
+
+def get_as_base64(url):
+    try:
+        return base64.b64encode(requests.get(url).content)
+    except:
+        return b''
 
 
 def findfirst(pattern, string):
@@ -46,11 +57,6 @@ def get_file_infos(filename):
         'mtime': os.path.getmtime(filename),
     }
 
-
-def identify(filename):
-    movie = {**get_file_infos(filename), **get_movie_infos(filename)}
-    return {**movie, **get_imdb_infos(movie['title'])}
-
 def get_imdb_infos(title):
     ia = IMDb()
     movie = ia.search_movie(title)
@@ -63,15 +69,19 @@ def get_imdb_infos(title):
             'year': movie.get('year'),
             'genres': movie.get('genres'),
             'plot': movie.get('plot', [""])[0],
-            'cover': movie.get('cover'),
+            'cover': get_as_base64(movie.get('cover')).decode("utf-8"),
         }
     else:
         return {}
 
+def identify(filename):
+    movie = {**get_file_infos(filename), **get_movie_infos(filename), "updated_at": datetime.datetime.now()}
+    return {**movie, **get_imdb_infos(movie['title'])}
+
 def output_movie(movie):
     print(movie, file=sys.stderr)
     return """<tr>
-        <td><a href="{}" target="_blank"><img src="{}"/></a></td>
+        <td><a href="{}" target="_blank"><img src="data:image/jpeg;base64,{}"/></a></td>
         <td>{}</td>
         <td>{}</td>
         <td>{}</td>
