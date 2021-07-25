@@ -120,14 +120,14 @@ def output_html(movies):
             <thead class="thead-dark">
                 <tr>
                     <th>Cover</th>
-                    <th onclick="sortBy(0)">Title</th>
-                    <th onclick="sortBy(1)">Languages</th>
-                    <th onclick="sortBy(2)">Subtitles</th>
-                    <th onclick="sortBy(3)">Duration</th>
-                    <th onclick="sortBy(4)">Year</th>
-                    <th onclick="sortBy(5)">Genres</th>
-                    <th onclick="sortBy(6)">Plot</th>
-                    <th onclick="sortBy(7)">Size</th>
+                    <th onclick="sortBy(1)">Title</th>
+                    <th onclick="sortBy(2)">Languages</th>
+                    <th onclick="sortBy(3)">Subtitles</th>
+                    <th onclick="sortBy(4)">Duration</th>
+                    <th onclick="sortBy(5)">Year</th>
+                    <th onclick="sortBy(6)">Genres</th>
+                    <th onclick="sortBy(7)">Plot</th>
+                    <th onclick="sortBy(8)">Size</th>
                 </tr>
             </thead>
             <tbody>
@@ -139,7 +139,7 @@ def output_html(movies):
     function sortBy(col) {{
         let origin = Array.from(document.querySelectorAll('tbody tr'))
         let sorted = origin.slice(0);
-        sorted = sorted.sort((a, b) => a.children[col].innerText > b.children[col].innerText);
+        sorted = sorted.sort((a, b) => a.children[col].innerText.trim() > b.children[col].innerText.trim());
         if (origin[0] == sorted[0]) {{
             sorted.reverse();
         }}
