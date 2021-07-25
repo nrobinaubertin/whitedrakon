@@ -11,6 +11,7 @@ import tempfile
 import requests
 import base64
 import datetime
+import json
 from imdb import IMDb
 
 
@@ -151,11 +152,11 @@ def output_html(movies):
 </html>\
     """.format(functools.reduce(lambda x, y: str(x) + output_movie(y), movies, ""))
 
-picklefile = tempfile.gettempdir() + os.sep + "whitedrake.pickle"
+datafile = tempfile.gettempdir() + os.sep + "whitedrake.json"
 movies = []
-if os.path.isfile(picklefile):
-    with open(picklefile, 'rb') as f:
-        movies = pickle.load(f)
+if os.path.isfile(datafile):
+    with open(datafile, 'r') as f:
+        movies = json.loads(f.read())
 
 for path, subdirs, files in os.walk(sys.argv[1]):
     for name in files:
@@ -168,8 +169,7 @@ for path, subdirs, files in os.walk(sys.argv[1]):
                 m = identify(moviepath)
                 print(m, file=sys.stderr)
                 movies.append(m)
-                with open(picklefile, 'wb') as f:
-                    pickle.dump(movies, f, protocol=4)
-
+                with open(datafile, 'w') as f:
+                    json.dump(movies, f, indent=2, sort_keys=True, default=str)
 
 print(output_html(movies))
